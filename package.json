@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "build": "vue-cli-service build",
+    "start": "node app.js"
   },
   "dependencies": {
     "core-js": "^3.6.5",
+    "express": "^4.17.1",
     "firebase": "^8.0.0",
+    "serve-static": "^1.14.1",
     "vue": "^2.6.11",
     "vue-native-color-picker": "^1.2.0",
     "vue-router": "^3.2.0",
