@@ -246,6 +246,12 @@ export default {
                             this.resetearProducto()
                             this.mensaje='tarea editada exitosamente'
                         })  
+                    }else{
+                        this.verProductos() 
+                        this.dialog=false
+                        this.snackbar=true
+                        this.resetearProducto()
+                        this.mensaje='tarea editada exitosamente'
                     }
                     
                     
