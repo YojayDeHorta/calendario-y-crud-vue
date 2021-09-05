@@ -200,9 +200,9 @@ export default {
         },
         async agregaryeditarProducto(){
             try {
+                if(this.envioForm)this.producto.envio=false
+                if(!this.descuentoForm)this.producto.descuento=false
                 if(this.producto.id==''){
-                    if(this.envioForm)this.producto.envio=false
-                    if(!this.descuentoForm)this.producto.descuento=false
                     await db.collection('productos').add({
                     descripcion: this.producto.descripcion,
                     precio:this.producto.precio,
