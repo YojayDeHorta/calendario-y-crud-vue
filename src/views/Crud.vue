@@ -170,6 +170,7 @@ export default {
             this.producto=JSON.parse(JSON.stringify(productoAeditar))
             this.formTitle='Editando el producto: '+productoAeditar.descripcion
             this.imagenEdit=this.producto.url
+            this.imagen=null
             if(this.producto.envio!=false)this.envioForm=false
             if(this.producto.descuento!=false)this.descuentoForm=true
             this.dialog=true
