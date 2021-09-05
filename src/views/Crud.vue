@@ -9,7 +9,7 @@
     </v-row>
     <v-row class="d-flex justify-center" cols="12" md="12">
         
-        <v-data-table :headers="columnas" :loading="loading" loading-text="Cargando...Porfavor espere" :items="articulos" sort-by="ID" class="elevation-19">
+        <v-data-table :headers="columnas" :loading="loading" loading-text="Cargando...Porfavor espere" :items="articulos" sort-by="descripcion" class="elevation-19">
             <template v-slot:[`item.imagen`]="{ item }">
                  <v-img class="my-2"  contain max-height="200" max-width="100"  :src="item.url"></v-img> 
                 
@@ -140,14 +140,14 @@ export default {
             loading:true,
             imagenes:[],
             columnas:[
-                {text:'ID' ,value:'id', class:'black white--text'},
-                {text:'IMAGEN DEL PRODUCTO' ,value:'imagen', class:'black white--text'},
-                {text:'DESCRIPCION' ,value:'descripcion', class:'black white--text'},
-                {text:'PRECIO' ,value:'precio', class:'black white--text'},
-                {text:'STOCK' ,value:'stock', class:'black white--text'},
-                {text:'ENVIO' ,value:'envio', class:'black white--text'},
-                {text:'DESCUENTO' ,value:'descuento', class:'black white--text'},
-                { text: 'ACCIONES', value: 'actions', class:'black white--text', sortable: false },
+                {text:'ID' ,value:'id', class:'primary white--text'},
+                {text:'IMAGEN DEL PRODUCTO' ,value:'imagen', class:'primary white--text'},
+                {text:'DESCRIPCION' ,value:'descripcion', class:'primary white--text'},
+                {text:'PRECIO' ,value:'precio', class:'primary white--text'},
+                {text:'STOCK' ,value:'stock', class:'primary white--text'},
+                {text:'ENVIO' ,value:'envio', class:'primary white--text'},
+                {text:'DESCUENTO' ,value:'descuento', class:'primary white--text'},
+                { text: 'ACCIONES', value: 'actions', class:'primary white--text', sortable: false },
             ] ,
             articulos:[],
             producto: {
