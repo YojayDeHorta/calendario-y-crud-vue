@@ -44,7 +44,7 @@
           </v-menu>
         </v-toolbar>
       </v-sheet>
-      <v-sheet height="600">
+      <v-sheet height="100%">
         <v-calendar
           ref="calendar"
           v-model="focus"
@@ -59,14 +59,17 @@
           @click:date="viewDay"
           @change="updateRange"
          
-        :weekdays="[1, 2, 3, 4, 5, 6, 0]"
-        locale="es"
+        :weekdays="weekFormat"
+        
         :short-weekdays="false"
-
+        :first-interval= 54
+        :interval-minutes= 10
+        :interval-count= 60
+        locale="es"
         ></v-calendar>
 
-        <!-- Agregar Modal Agregar Evento -->
-        <v-dialog persistent max-width="600px" v-model="dialog">
+        <!-- Agregar Modal Agregar Evento :first-interval= 8   :interval-minutes= 60 :interval-count= 12 locale="es"-->
+        <v-dialog persistent max-width="700px"  v-model="dialog">
             <v-card>
                 <v-container>
                     <v-card>
@@ -85,19 +88,40 @@
                         </v-row>
                         <v-row>
                             <v-col md="4">
-                                <v-text-field type="date" label="Inicio del evento" v-model="start"  required></v-text-field>
+                                <v-text-field type="date" label="Inicio del evento" :min="today" :max="dateEnd" v-model="dateStart"  required></v-text-field>
+                                
                             </v-col>
                             <v-col md="4">
-                                <v-text-field type="date" label="fin del evento" v-model="end" required></v-text-field>
+                                <v-text-field type="date" label="fin del evento" v-if="dateStart" :min="dateStart" v-model="dateEnd" required></v-text-field>
+                                
                             </v-col>
                             <v-col md="4">
                                 <h5>color de la tarea:</h5>
                                 <v-input-colorpicker class="ml-5" type="color" label="color del evento" v-model="color" value="color"></v-input-colorpicker>
                             </v-col>
                         </v-row>
+                        <v-row>
+                            <v-col md="6" v-if="dateStart">
+                                <v-menu ref="menu"  v-model="menuStart" :close-on-content-click="false" :nudge-right="40" :return-value.sync="clockStart">
+                                  <template v-slot:activator="{ on }">
+                                    <v-text-field v-model="clockStart" label="Hora inicial"  readonly v-on="on"></v-text-field>
+                                  </template>
+                                  <v-time-picker v-if="menuStart" v-model="clockStart" min="09:00" max="19:00" @click:minute="$refs.menu.save(clockStart)"></v-time-picker>
+                                </v-menu>
+                                
+                            </v-col>
+                            <v-col md="6" v-if="clockStart">
+                                <v-menu ref="menu2" v-model="menuEnd" :close-on-content-click="false" :nudge-right="40" :return-value.sync="clockEnd">
+                                  <template v-slot:activator="{ on }">
+                                    <v-text-field v-model="clockEnd" label="Hora final"  readonly v-on="on"></v-text-field>
+                                  </template> 
+                                  <v-time-picker v-if="menuEnd" v-model="clockEnd" :min="clockStart" max="19:00" @click:minute="$refs.menu2.save(clockEnd)"></v-time-picker>
+                                </v-menu>
+                            </v-col>
+                        </v-row>
                             <v-spacer></v-spacer>
                             <v-card-actions>
-                                <v-btn type="submit" color="primary" class="mr-2" @click.stop="dialog=false">Agregar</v-btn>
+                                <v-btn type="submit" color="primary" class="mr-2" >Agregar</v-btn>
                                 <v-btn  color="error" class="mr-4" @click.stop="dialog=false">Cancelar</v-btn>
                             </v-card-actions>
                         </v-form>
@@ -173,7 +197,7 @@ export default {
     data: () => ({
       today: new Date().toISOString().substr(0, 10),
       focus: new Date().toISOString().substr(0, 10),
-      type: 'month',
+      type: 'week',
       typeToLabel: {
         month: 'Mes',
         week: 'Semana',
@@ -182,6 +206,12 @@ export default {
       },
       start: null,
       end: null,
+      dateStart:null,
+      dateEnd:null,
+      clockStart:null,
+      clockEnd:null,
+      menuStart:false,
+      menuEnd:false,
       selectedEvent: {},
       selectedElement: null,
       selectedOpen: false,
@@ -230,6 +260,16 @@ export default {
           timeZone: 'UTC', month: 'long',
         })
       },
+      weekFormat(){
+        var dia = new Date().getDay();
+        let array=[]
+        for (let index = 0; index < 7; index++) {
+          array.push(dia) 
+          dia++
+          if (dia==7)dia=0   
+        }
+        return array
+      }
     },
     created() {
         this.getEvents()
@@ -239,25 +279,49 @@ export default {
       
     },
     methods: {
+        checkEvent(){
+          let check=false
+          this.events.forEach(event=>{
+            var x=new Date(event.start).getTime();
+            var y=new Date(event.end).getTime();
+            var a = new Date(this.dateStart+' '+this.clockStart).getTime();
+            var b = new Date(this.dateEnd+' '+this.clockEnd).getTime();
+            if (Math.min(x, y) < Math.max(a, b) && Math.max(x, y) > Math.min(a, b)) {
+              check=true
+            }
+          })
+          return check
+        },
         async addEvent(){
+          
             try {
-                if(this.name && this.start && this.end){
-                    await db.collection('eventos').add({
+                if(this.name && this.dateStart && this.dateEnd &&this.clockStart&&this.clockEnd){
+                    if (!this.checkEvent()) {
+                      await db.collection('eventos').add({
                         name: this.name,
                         details:this.details,
-                        start:this.start,
-                        end:this.end,
+                        start:this.dateStart+' '+this.clockStart,
+                        end:this.dateEnd+' '+this.clockEnd,
                         color:this.color
-                    })
-                    this.getEvents()
-                    this.name=null
-                    this.details=null
-                    this.start=null
-                    this.end=null
-                    this.color='#1976D2'
-                    this.colorSnackbar='success'
-                    this.snackbar=true
-                    this.mensaje='tarea guardada correctamente'
+                      })
+                      this.getEvents()
+                      this.name=null
+                      this.details=null
+                      this.dateStart=null
+                      this.dateEnd=null
+                      this.clockStart=null
+                      this.clockEnd=null
+                      this.color='#1976D2'
+                      this.colorSnackbar='success'
+                      this.snackbar=true
+                      this.mensaje='tarea guardada correctamente'
+                      this.dialog=false
+                    }else{
+                      this.colorSnackbar='black'
+                      this.snackbar=true
+                      this.mensaje='El rango de horario se cruza con otro evento, porfavor verifica tus eventos'
+                    }
+                    
                     
                 }else{
                     this.colorSnackbar='black'
@@ -274,6 +338,7 @@ export default {
            try {
                const snapshot= await db.collection('eventos').get();
                const events=[]
+               
                snapshot.forEach(doc=>{
                 //    console.log(doc.data());
                    let eventoData = doc.data()
@@ -361,6 +426,7 @@ export default {
           ? 'th'
           : ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'][d % 10]
       },
+     
     },
 }
 </script>
