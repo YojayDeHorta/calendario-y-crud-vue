@@ -18,6 +18,7 @@
           <v-toolbar-title>{{ title }}</v-toolbar-title>
           <v-spacer></v-spacer>
           <v-menu bottom right>
+              
             <template v-slot:activator="{ on }">
               <v-btn
                 outlined
@@ -27,6 +28,7 @@
                 <v-icon right>mdi-menu-down</v-icon>
               </v-btn>
             </template>
+          
             <v-list>
               <v-list-item @click="type = 'day'">
                 <v-list-item-title>Dia</v-list-item-title>

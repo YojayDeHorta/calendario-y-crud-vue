@@ -19,6 +19,7 @@
           <v-spacer></v-spacer>
           <v-menu bottom right>
             <template v-slot:activator="{ on }">
+              <v-btn class="ml-2" outlined @click="dialogConfig=true" fab small ><v-icon >mdi-cog</v-icon></v-btn>
               <v-btn
                 outlined
                 v-on="on"
@@ -27,18 +28,19 @@
                 <v-icon right>mdi-menu-down</v-icon>
               </v-btn>
             </template>
+            
             <v-list>
-              <v-list-item @click="type = 'day'">
+              <v-list-item @click="changeType=true; type = 'day'">
                 <v-list-item-title>Dia</v-list-item-title>
               </v-list-item>
-              <v-list-item @click="type = 'week'">
+              <v-list-item @click="changeType=true; type = '4day'">
+                <v-list-item-title>4 Dias</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="changeType=true; type = 'week'">
                 <v-list-item-title>Semana</v-list-item-title>
               </v-list-item>
-              <v-list-item @click="type = 'month'">
+              <v-list-item @click="changeType=true; type = 'month'">
                 <v-list-item-title>Mes</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="type = '4day'">
-                <v-list-item-title>4 Dias</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>
@@ -53,7 +55,7 @@
           :event-color="getEventColor"
           :event-margin-bottom="3"
           :now="today"
-          :type="type"
+          :type="height"
           @click:event="showEvent"
           @click:more="viewDay"
           @click:date="viewDay"
@@ -62,11 +64,40 @@
         :weekdays="weekFormat"
         
         :short-weekdays="false"
-        :first-interval= 54
+        :first-interval= intervaloInicial
         :interval-minutes= 10
-        :interval-count= 60
+        :interval-count= intervaloFinal
         locale="es"
         ></v-calendar>
+        <!-- configuracion -->
+        <v-dialog persistent max-width="700px"  v-model="dialogConfig">
+          <v-container>
+            <v-form @submit.prevent="saveConfig">
+              <v-card>
+                <v-card-title>
+                  <span class="text-h5">Configuracion</span>
+                </v-card-title>
+                <v-card-text>
+                  <v-row >
+                    <v-col  lg="6"  md="6" xs="12" class="d-flex flex-column justify-center">
+                        <h2>Hora de apertura:</h2>
+                        <v-time-picker v-model="configStart" :max="configEnd"></v-time-picker>
+                    </v-col>
+                    <v-col lg="6" md="6" xs="12" class="d-flex flex-column justify-center">
+                        <h2>Hora de cierre:</h2>
+                        <v-time-picker v-model="configEnd" :min="configStart"></v-time-picker>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn type="submit" text color="primary" class="mr-2" >Guardar configuracion</v-btn>
+                    <v-btn  color="error" text class="mr-4" @click.stop="dialogConfig=false">Cancelar</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-form>
+          </v-container>
+        </v-dialog>
 
         <!-- Agregar Modal Agregar Evento :first-interval= 8   :interval-minutes= 60 :interval-count= 12 locale="es"-->
         <v-dialog persistent max-width="700px"  v-model="dialog">
@@ -74,29 +105,28 @@
                 <v-container>
                     <v-card>
                     <v-card-title>
-                        <span class="text-h5">Crear tarea</span>
+                        <span class="text-h5">Crear evento</span>
                     </v-card-title>
                     <v-card-text>
                         <v-form @submit.prevent="addEvent">
                         <v-row>
                             <v-col md="6">
-                                <v-text-field type="text" label="Agregar Nombre" v-model="name"  required></v-text-field>  
+                                <v-text-field type="text" label="Agregar título" v-model="name"  required></v-text-field>  
                             </v-col>
                             <v-col md="6">
-                                <v-text-field type="text" label="Agregar un detalle" v-model="details"  required></v-text-field>
+                                <v-text-field type="text" label="Agregar detalle " v-model="details"  required></v-text-field>
                             </v-col>
                         </v-row>
                         <v-row>
                             <v-col md="4">
-                                <v-text-field type="date" label="Inicio del evento" :min="today" :max="dateEnd" v-model="dateStart"  required></v-text-field>
+                                <v-text-field type="date" label="Inicio del evento" @change="dateEnd=dateStart" :min="today" :max="dateEnd" v-model="dateStart"  required></v-text-field>
                                 
                             </v-col>
                             <v-col md="4">
                                 <v-text-field type="date" label="fin del evento" v-if="dateStart" :min="dateStart" v-model="dateEnd" required></v-text-field>
-                                
                             </v-col>
                             <v-col md="4">
-                                <h5>color de la tarea:</h5>
+                                <h5>color del evento:</h5>
                                 <v-input-colorpicker class="ml-5" type="color" label="color del evento" v-model="color" value="color"></v-input-colorpicker>
                             </v-col>
                         </v-row>
@@ -110,8 +140,8 @@
                                 </v-menu>
                                 
                             </v-col>
-                            <v-col md="6" v-if="clockStart">
-                                <v-menu ref="menu2" v-model="menuEnd" :close-on-content-click="false" :nudge-right="40" :return-value.sync="clockEnd">
+                            <v-col md="6" >
+                                <v-menu v-if="clockStart" ref="menu2" v-model="menuEnd" :close-on-content-click="false" :nudge-right="40" :return-value.sync="clockEnd">
                                   <template v-slot:activator="{ on }">
                                     <v-text-field v-model="clockEnd" label="Hora final"  readonly v-on="on"></v-text-field>
                                   </template> 
@@ -131,18 +161,8 @@
                 
             </v-card>
         </v-dialog>
-        <v-menu
-          v-model="selectedOpen"
-          :close-on-content-click="false"
-          :activator="selectedElement"
-          
-          offset-x
-        >
-          <v-card
-            color="grey lighten-4"
-            min-width="350px"
-            flat
-          >
+        <v-menu v-model="selectedOpen" :close-on-content-click="false" :activator="selectedElement" offset-x>
+          <v-card color="grey lighten-4" min-width="350px" flat>
             <!-- Agregar Funcionalidades Editar y Eliminar -->
             <v-toolbar
               :color="selectedEvent.color"
@@ -153,7 +173,7 @@
               </v-btn>
               <v-toolbar-title v-html="selectedEvent.name"></v-toolbar-title>
               <v-spacer></v-spacer>
-              <v-btn icon v-if="currentlyEditing!== selectedEvent.id" @click.prevent="editEvent(selectedEvent.id)">
+              <v-btn icon v-if="currentlyEditing!== selectedEvent.id" @click.prevent="editEvent(selectedEvent)">
                 <v-icon>mdi-pencil</v-icon>
               </v-btn>
               
@@ -161,11 +181,15 @@
 
             <v-card-text>
               <v-form v-if="currentlyEditing!== selectedEvent.id">
+                  <div>de {{horaInicial()}} a {{horaFinal()}}</div> 
                   {{selectedEvent.details}}
               </v-form>
               <v-form v-else>
-                  <v-text-field type="text" v-model="selectedEvent.name" label="editar nombre"></v-text-field>
-                  <textarea-autosize v-model="selectedEvent.details" type="text" style="width:100%" :min-heigth="100"></textarea-autosize>
+                  <v-text-field type="text" v-model="selectedEvent.name" label="editar titulo"></v-text-field>
+                  <h5>detalle del evento:</h5>
+                  <textarea-autosize v-model="selectedEvent.details"  type="text" style="width:100%" :min-heigth="100"></textarea-autosize>
+                  <h5>color del evento:</h5>
+                  <v-input-colorpicker class="ml-5" type="color" label="color del evento" v-model="selectedEvent.color" value="color"></v-input-colorpicker>
               </v-form>
             </v-card-text>
 
@@ -173,7 +197,7 @@
               <v-btn
                 text
                 color="error"
-                @click="selectedOpen = false;esperarFuncion()"
+                @click="selectedOpen = false;esperarFuncion(selectedEvent)"
               >
                 Cancelar
               </v-btn>
@@ -198,6 +222,7 @@ export default {
       today: new Date().toISOString().substr(0, 10),
       focus: new Date().toISOString().substr(0, 10),
       type: 'week',
+      changeType:false,
       typeToLabel: {
         month: 'Mes',
         week: 'Semana',
@@ -214,6 +239,7 @@ export default {
       menuEnd:false,
       selectedEvent: {},
       selectedElement: null,
+      oldColor:null,
       selectedOpen: false,
       events: [],
       // Adicionales...
@@ -224,9 +250,30 @@ export default {
       currentlyEditing: null,
       mensaje:'',
       snackbar:false,
-      colorSnackbar:'black'
+      colorSnackbar:'black',
+      //especial para configuraciones
+      dialogConfig:false,
+      configStart:'09:30',
+      configEnd:'19:30',
+      intervaloInicial:50,
+      intervaloFinal:60
+
     }),
     computed: {
+      height () {
+        if (!this.changeType) {
+          switch (this.$vuetify.breakpoint.name) {
+          case 'xs': this.type='day';return this.type
+          case 'sm': this.type='4day';return this.type
+          case 'md': this.type='4day';return this.type
+          case 'lg': this.type='week';return this.type
+          case 'xl': this.type='week';return this.type
+          }
+        }else{
+          return this.type
+        }
+        
+      },
       title () {
         const { start, end } = this
         if (!start || !end) {
@@ -241,17 +288,18 @@ export default {
         const endYear = end.year
         const suffixYear = startYear === endYear ? '' : endYear
 
-        const startDay = start.day + this.nth(start.day)
-        const endDay = end.day + this.nth(end.day)
+        const startDay = start.day 
+        // const startDay = start.day + this.nth(start.day)
+        const endDay = end.day 
 
         switch (this.type) {
           case 'month':
             return `${startMonth} ${startYear}`
           case 'week':
           case '4day':
-            return `${startMonth} ${startDay} ${startYear} - ${suffixMonth} ${endDay} ${suffixYear}`
+            return `${startMonth} ${startDay}  - ${suffixMonth} ${endDay} del ${suffixYear} ${startYear}`
           case 'day':
-            return `${startMonth} ${startDay} ${startYear}`
+            return `${startMonth} ${startDay} del ${startYear}`
         }
         return ''
       },
@@ -272,13 +320,17 @@ export default {
       }
     },
     created() {
+        this.loadConfig()
         this.getEvents()
+        
     },
     mounted () {
       this.$refs.calendar.checkChange()
       
     },
     methods: {
+        horaInicial(){if(Object.keys(this.selectedEvent).length !== 0)return this.selectedEvent.start.slice(10)},
+        horaFinal(){if(Object.keys(this.selectedEvent).length !== 0)return this.selectedEvent.end.slice(10)},
         checkEvent(){
           let check=false
           this.events.forEach(event=>{
@@ -351,7 +403,6 @@ export default {
            }
        },
        async deleteEvent(evento){
-           console.log(evento);
             try {
                 await db.collection('eventos').doc(evento.id).delete()
                 this.selectedOpen=false;
@@ -363,14 +414,16 @@ export default {
                 console.log(error);
             }
        },
-       editEvent(id){
-           this.currentlyEditing = id
+       editEvent(event){
+           this.currentlyEditing = event.id
+           this.oldColor=event.color
        },
        async updateEvent(event){
            try {
                await db.collection('eventos').doc(event.id).update({
                    name:event.name,
-                   details:event.details
+                   details:event.details,
+                   color:event.color
                })
                this.selectedOpen=false;
                this.currentlyEditing=null;
@@ -381,8 +434,14 @@ export default {
                console.log(error);
            }
        },
-       esperarFuncion(){
-            setTimeout(() => {  this.currentlyEditing=null }, 500);
+       esperarFuncion(event){
+            setTimeout(() => {  
+              this.currentlyEditing=null 
+              if (this.oldColor!=null) {
+                  event.color=this.oldColor;
+              }
+              
+            }, 500);
        },
       viewDay ({ date }) {
         this.focus = date
@@ -426,7 +485,35 @@ export default {
           ? 'th'
           : ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'][d % 10]
       },
-     
+      //configs
+      async createConfig(){
+        await db.collection('Configuraciones').doc('Config').set({
+            start:'09:30',
+            end:'19:40',
+        });
+      },
+      async loadConfig(){
+        const snapshot= await db.collection('Configuraciones').doc('Config').get();
+        if (snapshot.exists) {
+          let config=snapshot.data() 
+          this.configStart=config.start
+          this.configEnd=config.end
+          this.intervaloInicial=(Number(this.configStart.slice(0,2))*6)+Number(this.configStart.slice(3,4))
+          this.intervaloFinal=(Number(this.configEnd.slice(0,2))*6)+Number(this.configEnd.slice(3,4))-this.intervaloInicial
+        }
+      },
+      async saveConfig(){
+        await db.collection('Configuraciones').doc('Config').set({
+            start:this.configStart,
+            end:this.configEnd,
+        });
+        this.loadConfig()
+        this.colorSnackbar='success'
+        this.snackbar=true
+        this.mensaje='configuracion guardada correctamente'
+        this.dialogConfig=false
+
+      }
     },
 }
 </script>
