@@ -30,7 +30,7 @@
         </v-data-table>
     </v-row>
     <!-- ventana modal para crear/editar -->
-    <v-dialog v-model="dialog" max-width="800px">
+    <v-dialog   v-dialog v-model="dialog" max-width="800px">
           <v-card>
             <v-form  @submit.prevent="agregaryeditarProducto">
             
